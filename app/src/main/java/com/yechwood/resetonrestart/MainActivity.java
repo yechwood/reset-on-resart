@@ -7,9 +7,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -24,6 +22,11 @@ public class MainActivity extends Activity {
         dpm = (DevicePolicyManager)getSystemService(DEVICE_POLICY_SERVICE);
         admin = new ComponentName(this, ResetDeviceAdminReceiver.class);
         buildUi();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (dpm != null && admin != null) buildUi();
     }
 
     private void buildUi() {
@@ -65,7 +68,7 @@ public class MainActivity extends Activity {
         root.addView(restartReset, new LinearLayout.LayoutParams(-1, -2));
 
         TextView note = new TextView(this);
-        note.setText("\nImportant: Factory reset permanently erases user data.\n\nOn Android 6, a device-admin app cannot programmatically reboot the phone. The Restart, Then Reset option arms the reset and waits for the normal Android BOOT_COMPLETED broadcast. You must restart the phone using its normal power/restart controls. After it boots, the app will attempt the reset automatically.");
+        note.setText("\nImportant: Factory reset permanently erases user data.\n\nWhen you choose \"RESTART, THEN RESET\", the reset is armed. The next time this phone restarts, this app will automatically attempt the factory reset. You must restart the phone yourself using its normal power/restart controls.");
         note.setTextSize(15);
         note.setPadding(0, 24, 0, 0);
         root.addView(note, new LinearLayout.LayoutParams(-1, -2));
@@ -97,14 +100,14 @@ public class MainActivity extends Activity {
         if (!isAdmin()) { requestAdmin(); return; }
         new AlertDialog.Builder(this)
             .setTitle("Restart, then reset?")
-            .setMessage("The reset will NOT happen immediately. This app will arm the reset, and after the phone next completes a normal restart, it will attempt the factory reset. On Android 6 this app cannot restart the phone itself, so use the phone's normal restart/power controls.")
+            .setMessage("When you press ARM RESET, the reset will be armed. The next time this phone restarts, this app will automatically attempt to factory-reset the phone. You must restart the phone yourself using its normal power/restart controls. The factory reset will erase the phone's user data.")
             .setNegativeButton("CANCEL", null)
             .setPositiveButton("ARM RESET", (d,w) -> {
                 getSharedPreferences(BootReceiver.PREFS, MODE_PRIVATE)
                     .edit().putBoolean(BootReceiver.PENDING, true).apply();
                 new AlertDialog.Builder(this)
                     .setTitle("Reset armed")
-                    .setMessage("Restart the phone now using its normal power/restart controls. After boot completes, the app will attempt the factory reset.")
+                    .setMessage("The reset is armed. The next time this phone restarts, this app will attempt the factory reset automatically. Restart the phone now using its normal power/restart controls.")
                     .setPositiveButton("OK", null)
                     .show();
             }).show();
